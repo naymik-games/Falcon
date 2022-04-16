@@ -77,6 +77,7 @@ class preloadGame extends Phaser.Scene {
     this.load.image('block', 'assets/falcon3.png');
     this.load.image('shield', 'assets/blurred-circle.png');
     this.load.image('bonus', 'assets/bonus3.png');
+    this.load.image('back', 'assets/back.png');
     this.load.image('asteroid_small', 'assets/asteroid_small.png');
 
     this.load.image('bar', 'assets/block.png');

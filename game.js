@@ -37,7 +37,8 @@ class playGame extends Phaser.Scene {
 
 
     this.cameras.main.setBackgroundColor(0x000000);
-
+    this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back')
+    //this.tileSprite.autoScroll(0, 100)
     this.input.addPointer(9);
     this.hyperspace = false;
     this.hasShield = false;
@@ -97,10 +98,10 @@ class playGame extends Phaser.Scene {
 
 
 
-    this.bar = this.physics.add.image(game.config.width / 2, game.config.height - 5, "bar").setAlpha(.5);
-    this.bar.setInteractive();
-    this.bar.displayWidth = 380;
-    this.bar.displayHeight = 100;
+    /*  this.bar = this.physics.add.image(game.config.width / 2, game.config.height - 5, "bar").setAlpha(.5);
+     this.bar.setInteractive();
+     this.bar.displayWidth = 380;
+     this.bar.displayHeight = 100; */
 
     this.healthBarback = this.makeBar(0, game.config.height - 25, 0x333333);
     this.healthBar = this.makeBar(0, game.config.height - 25, 0x2ecc71);
@@ -182,6 +183,7 @@ class playGame extends Phaser.Scene {
     //this.check = this.add.image(725, 1000, 'check').setScale(.7);
   }
   update() {
+    this.tileSprite.tilePositionY -= 1;
     if (this.isImmune) {
       this.immuneCount++
       if (this.immuneCount == 100) {
@@ -222,7 +224,7 @@ class playGame extends Phaser.Scene {
       }
     }
     if (this.health <= 0) {
-      this.scene.start('GameScene');
+      this.scene.start('playGame');
     }
 
     enemyGroup.getChildren().forEach(enemy => {
@@ -280,7 +282,7 @@ class playGame extends Phaser.Scene {
       this.health = 100;
       this.healthText.setText(this.health);
       this.setValue(this.healthBar, this.health);
-      this.bar.tint = 0xffbbee;
+      //this.bar.tint = 0xffbbee;
     }
 
     this.cameras.main.shake(100, 0.01);
