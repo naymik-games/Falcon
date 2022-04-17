@@ -9,8 +9,10 @@ window.onload = function () {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       parent: "thegame",
-      width: 340,
-      height: 680
+      // width: 340,
+      // height: 680
+      width: 900,
+      height: 1640
     },
     physics: {
       default: "arcade"
@@ -37,7 +39,9 @@ class playGame extends Phaser.Scene {
 
 
     this.cameras.main.setBackgroundColor(0x000000);
-    this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back')
+    this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back').setAlpha(.6)
+    this.tileSprite2 = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back2').setAlpha(.8)
+
     //this.tileSprite.autoScroll(0, 100)
     this.input.addPointer(9);
     this.hyperspace = false;
@@ -80,17 +84,17 @@ class playGame extends Phaser.Scene {
       active: false
     });
 
-    this.shield = this.physics.add.image(-100, - 100, "shield").setScale(1).setAlpha(.1);
+    this.shield = this.physics.add.image(-100, - 100, "shield").setScale(1).setAlpha(.4);
     this.shield.body.setImmovable(true);
 
-    this.theBlock = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(.75);
+    this.theBlock = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
     this.theBlock.body.setImmovable(true);
     this.theBlock.body.collideWorldBounds = true;
     this.health = 100;
     // this.theBlock.displaWidth=50;
     // this.theBlock.displaHeight=50;
 
-    this.healthText = this.add.bitmapText(game.config.width / 2, 25, "font", "ccc", 40);
+    this.healthText = this.add.bitmapText(game.config.width / 2, 25, "font", "ccc", 80);
     this.healthText.setText(this.health);
 
     this.moving = false;
@@ -139,11 +143,11 @@ class playGame extends Phaser.Scene {
         });*/
     //   this.emitter.startFollow(this.theBlock);
 
-    this.input.on('pointerdown', this.fire, this);
+    this.input.on('pointerup', this.fire, this);
     this.varytimer = Math.floor(Math.random() * 3);
 
     this.time.addEvent({
-      delay: 1500,
+      delay: 1700,
       loop: true,
       callback: () => {
         this.createEnemy();
@@ -183,7 +187,8 @@ class playGame extends Phaser.Scene {
     //this.check = this.add.image(725, 1000, 'check').setScale(.7);
   }
   update() {
-    this.tileSprite.tilePositionY -= 1;
+    this.tileSprite.tilePositionY -= 5;
+    this.tileSprite2.tilePositionY -= 6.5;
     if (this.isImmune) {
       this.immuneCount++
       if (this.immuneCount == 100) {
@@ -194,9 +199,9 @@ class playGame extends Phaser.Scene {
     }
     if (this.hyperspace) {
       if (this.theBlock.x < 0) {
-        this.theBlock.setPosition(360, this.theBlock.y);
+        this.theBlock.setPosition(game.config.width, this.theBlock.y);
       }
-      if (this.theBlock.x > 360) {
+      if (this.theBlock.x > game.config.width) {
         this.theBlock.setPosition(0, this.theBlock.y);
       }
     } else {
@@ -240,19 +245,19 @@ class playGame extends Phaser.Scene {
     });
 
     tieLaserGroup.getChildren().forEach(laser => {
-      if (laser.active && laser.y > 640) {
+      if (laser.active && laser.y > game.config.height) {
         tieLaserGroup.killAndHide(laser);
       }
     });
 
     bonusGroup.getChildren().forEach(bonus => {
-      if (bonus.active && bonus.y > 640) {
+      if (bonus.active && bonus.y > game.config.height) {
         bonusGroup.killAndHide(bonus);
       }
     });
 
     smallAsteroidGroup.getChildren().forEach(ast => {
-      if (ast.active && ast.y > 640) {
+      if (ast.active && ast.y > game.config.height) {
         smallAsteroidGroup.killAndHide(ast);
       }
     });
@@ -414,12 +419,12 @@ class playGame extends Phaser.Scene {
   }
   createEnemy() {
     let bitcoinPosition = Math.floor(Math.random() * 5);
-    var enemy = enemyGroup.get([50, 100, 190, 250, 300][bitcoinPosition], 0)
+    var enemy = enemyGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
       .setActive(true)
       .setVisible(true)
-      .setScale(1);
+      .setScale(2);
     enemy.body.enable = true;
-    enemy.body.setVelocityY(100);
+    enemy.body.setVelocityY(300);
     var side = Phaser.Math.Between(1, 2);
     if (side == 1) {
       enemy.body.setVelocityX(-20);
@@ -434,17 +439,17 @@ class playGame extends Phaser.Scene {
     let bitcoinPosition = Math.floor(Math.random() * 5);
 
     if (type == 1) {
-      var enemy = smallAsteroidGroup.get([50, 100, 190, 250, 300][bitcoinPosition], 0)
+      var enemy = smallAsteroidGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
         .setActive(true)
         .setVisible(true)
-        .setScale(1);
+        .setScale(Phaser.Math.Between(2, 5));
       enemy.health = 100;
     }
 
     enemy.body.enable = true;
     //enemy.body.setVelocityY(Phaser.Math.Between(40, 70));
-    enemy.setGravityY(Phaser.Math.Between(20, 40));
-    enemy.body.setMaxVelocityY(50);
+    enemy.setGravityY(Phaser.Math.Between(30, 100));
+    enemy.body.setMaxVelocityY(100);
     var side = Phaser.Math.Between(1, 2);
     if (side == 1) {
       enemy.body.setVelocityX(-Phaser.Math.Between(15, 25));
@@ -460,10 +465,10 @@ class playGame extends Phaser.Scene {
       this.bonusType = 1;
     }
     let bonusPosition = Math.floor(Math.random() * 5);
-    var bonus = bonusGroup.get([50, 100, 190, 250, 300][bonusPosition], 0)
+    var bonus = bonusGroup.get([100, 250, 450, 700, 850][bonusPosition], 0)
       .setActive(true)
       .setVisible(true)
-      .setScale(1);
+      .setScale(2);
     bonus.body.enable = true;
     bonus.type = this.bonusType;
     bonus.body.setVelocityY(100);
@@ -488,9 +493,9 @@ class playGame extends Phaser.Scene {
       if (distY > 10 || distX > 10 || distY < 10 || distX > 10) {
         this.canShoot = true;
         if (pointer.downX > pointer.x) {
-          this.theBlock.body.setVelocityX(-300);
+          this.theBlock.body.setVelocityX(-400);
         } else {
-          this.theBlock.body.setVelocityX(300);
+          this.theBlock.body.setVelocityX(400);
         }
         //  this.trajectory.setPosition(pointer.downX, pointer.downY);
         // this.trajectory.visible = true;
@@ -551,7 +556,7 @@ class playGame extends Phaser.Scene {
       .setScale(1);
     laser.tint = 0x85dcff;
     laser.body.enable = true;
-    laser.body.setVelocityY(-400);
+    laser.body.setVelocityY(-600);
 
 
   }
@@ -562,7 +567,7 @@ class playGame extends Phaser.Scene {
       .setScale(1);
     lasert.tint = 0xb3372e
     lasert.body.enable = true;
-    lasert.body.setVelocityY(400);
+    lasert.body.setVelocityY(600);
 
 
   }
