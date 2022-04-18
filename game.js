@@ -87,12 +87,12 @@ class playGame extends Phaser.Scene {
     this.shield = this.physics.add.image(-100, - 100, "shield").setScale(1).setAlpha(.4);
     this.shield.body.setImmovable(true);
 
-    this.theBlock = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
-    this.theBlock.body.setImmovable(true);
-    this.theBlock.body.collideWorldBounds = true;
+    this.falcon = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
+    this.falcon.body.setImmovable(true);
+    this.falcon.body.collideWorldBounds = true;
     this.health = 100;
-    // this.theBlock.displaWidth=50;
-    // this.theBlock.displaHeight=50;
+    // this.falcon.displaWidth=50;
+    // this.falcon.displaHeight=50;
 
     this.healthText = this.add.bitmapText(game.config.width / 2, 25, "font", "ccc", 80);
     this.healthText.setText(this.health);
@@ -141,7 +141,7 @@ class playGame extends Phaser.Scene {
             // particle lifespan: 1 second
             lifespan: 1000
         });*/
-    //   this.emitter.startFollow(this.theBlock);
+    //   this.emitter.startFollow(this.falcon);
 
     this.input.on('pointerup', this.fire, this);
     this.varytimer = Math.floor(Math.random() * 3);
@@ -171,9 +171,9 @@ class playGame extends Phaser.Scene {
     });
     // this.input.on('pointerdown', this.clickHandler, this);
     this.physics.add.collider(laserGroup, enemyGroup, this.laserHitEnemy, null, this);
-    this.physics.add.collider(this.theBlock, enemyGroup, this.hitByTie, null, this);
-    this.physics.add.collider(this.theBlock, tieLaserGroup, this.hitByTieLaser, null, this);
-    this.physics.add.collider(this.theBlock, bonusGroup, this.hitByBonus, null, this);
+    this.physics.add.collider(this.falcon, enemyGroup, this.hitByTie, null, this);
+    this.physics.add.collider(this.falcon, tieLaserGroup, this.hitByTieLaser, null, this);
+    this.physics.add.collider(this.falcon, bonusGroup, this.hitByBonus, null, this);
     this.physics.add.collider(smallAsteroidGroup, smallAsteroidGroup, this.hitByBonus, null, this);
     this.physics.add.collider(smallAsteroidGroup, this.shield);
 
@@ -193,16 +193,16 @@ class playGame extends Phaser.Scene {
       this.immuneCount++
       if (this.immuneCount == 100) {
         this.isImmune = false;
-        this.theBlock.setAlpha(1);
+        this.falcon.setAlpha(1);
         this.immuneCount = 0;
       }
     }
     if (this.hyperspace) {
-      if (this.theBlock.x < 0) {
-        this.theBlock.setPosition(game.config.width, this.theBlock.y);
+      if (this.falcon.x < 0) {
+        this.falcon.setPosition(game.config.width, this.falcon.y);
       }
-      if (this.theBlock.x > game.config.width) {
-        this.theBlock.setPosition(0, this.theBlock.y);
+      if (this.falcon.x > game.config.width) {
+        this.falcon.setPosition(0, this.falcon.y);
       }
     } else {
 
@@ -210,7 +210,7 @@ class playGame extends Phaser.Scene {
     }
 
     if (this.hasShield) {
-      this.shield.setPosition(this.theBlock.x, this.theBlock.y);
+      this.shield.setPosition(this.falcon.x, this.falcon.y);
       if (this.health < 30) {
         this.hasShield = false;
         this.tweens.add({
@@ -389,33 +389,39 @@ class playGame extends Phaser.Scene {
     emitter.explode(20, enemy.x, enemy.y);
   }
   laserHitAsteroid(laser, enemy) {
-    smallAsteroidGroup.killAndHide(enemy);
+    console.log(enemy.health)
     laserGroup.killAndHide(laser);
     laser.body.enable = false;
-    var particles = this.add.particles("pixel");
-    var emitter = particles.createEmitter({
-      // particle speed - particles do not move
-      // speed: 1000,
-      speed: {
-        min: -1000,
-        max: 1000
-      },
-      // particle scale: from 1 to zero
-      scale: {
-        start: 1,
-        end: 0
-      },
-      // particle alpha: from opaque to transparent
-      alpha: {
-        start: 1,
-        end: 0
-      },
-      // particle frequency: one particle every 100 milliseconds
-      frequency: 25,
-      // particle lifespan: 1 second
-      lifespan: 500
-    });
-    emitter.explode(20, enemy.x, enemy.y);
+    if (enemy.health > 0) {
+      enemy.health -= 35;
+    } else {
+      smallAsteroidGroup.killAndHide(enemy);
+
+      var particles = this.add.particles("pixel");
+      var emitter = particles.createEmitter({
+        // particle speed - particles do not move
+        // speed: 1000,
+        speed: {
+          min: -1000,
+          max: 1000
+        },
+        // particle scale: from 1 to zero
+        scale: {
+          start: 1,
+          end: 0
+        },
+        // particle alpha: from opaque to transparent
+        alpha: {
+          start: 1,
+          end: 0
+        },
+        // particle frequency: one particle every 100 milliseconds
+        frequency: 25,
+        // particle lifespan: 1 second
+        lifespan: 500
+      });
+      emitter.explode(20, enemy.x, enemy.y);
+    }
   }
   createEnemy() {
     let bitcoinPosition = Math.floor(Math.random() * 5);
@@ -424,7 +430,7 @@ class playGame extends Phaser.Scene {
       .setVisible(true)
       .setScale(2);
     enemy.body.enable = true;
-    enemy.body.setVelocityY(300);
+    enemy.body.setVelocityY(400);
     var side = Phaser.Math.Between(1, 2);
     if (side == 1) {
       enemy.body.setVelocityX(-20);
@@ -493,9 +499,9 @@ class playGame extends Phaser.Scene {
       if (distY > 10 || distX > 10 || distY < 10 || distX > 10) {
         this.canShoot = true;
         if (pointer.downX > pointer.x) {
-          this.theBlock.body.setVelocityX(-400);
+          this.falcon.body.setVelocityX(-400);
         } else {
-          this.theBlock.body.setVelocityX(400);
+          this.falcon.body.setVelocityX(400);
         }
         //  this.trajectory.setPosition(pointer.downX, pointer.downY);
         // this.trajectory.visible = true;
@@ -515,7 +521,7 @@ class playGame extends Phaser.Scene {
   }
   endMove(pointer) {
     this.moving = false;
-    this.theBlock.body.setVelocityX(0);
+    this.falcon.body.setVelocityX(0);
     /*
   if(this.canShoot){
   var angleOfFire = Phaser.Math.DegToRad(this.trajectory.angle - 90);
@@ -539,8 +545,8 @@ class playGame extends Phaser.Scene {
   fire(e) {
     if (e.y < game.config.height - 75) {
 
-      this.oneFire(this.theBlock.x - 10, this.theBlock.y, 0);
-      this.oneFire(this.theBlock.x + 10, this.theBlock.y, 0);
+      this.oneFire(this.falcon.x - 10, this.falcon.y, 0);
+      this.oneFire(this.falcon.x + 10, this.falcon.y, 0);
 
       this.health--;
       this.healthText.setText(this.health);
@@ -567,7 +573,7 @@ class playGame extends Phaser.Scene {
       .setScale(1);
     lasert.tint = 0xb3372e
     lasert.body.enable = true;
-    lasert.body.setVelocityY(600);
+    lasert.body.setVelocityY(800);
 
 
   }

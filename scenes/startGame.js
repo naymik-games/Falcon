@@ -15,11 +15,11 @@ class startGame extends Phaser.Scene {
         gameSettings = defaultValues;
       }
     */
-    this.cameras.main.setBackgroundColor(0xf7eac6);
+    this.cameras.main.setBackgroundColor(0x000000);
 
-    var title = this.add.bitmapText(game.config.width / 2, 100, 'font', 'SquareDots', 150).setOrigin(.5).setTint(0xc76210);
+    var title = this.add.bitmapText(game.config.width / 2, 100, 'font', 'FALCON', 150).setOrigin(.5).setTint(0xffffff);
 
-    var startTime = this.add.bitmapText(game.config.width / 2 - 50, 275, 'font', 'Play Time', 50).setOrigin(0, .5).setTint(0x000000);
+    var startTime = this.add.bitmapText(game.config.width / 2 - 50, 275, 'font', 'Play', 50).setOrigin(0, .5).setTint(0xffffff);
     startTime.setInteractive();
     startTime.on('pointerdown', this.clickHandler, this);
 
