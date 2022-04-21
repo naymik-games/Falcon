@@ -1,166 +1,113 @@
 let game;
 
-let gameOptions = {
+var enemyGroup, laserGroup, smallAsteroidGroup, tieLaserGroup, bonusGroup
 
-
-  // duration of the wall, in milliseconds
-  wallDuration: 100,
-
-  // ball start speed, in pixels/second
-  ballStartSpeed: 500,
-
-  // ball speed increase at each successful bounce, in pixels/second
-  ballSpeedIncrease: 20
-}
 window.onload = function () {
   let gameConfig = {
-    width: 380,
-    height: 640,
-    scene: [preloadGame, GameSceneStart, GameScene, UIScene],
-    backgroundColor: 0x222222,
+    type: Phaser.AUTO,
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      parent: "thegame",
+      // width: 340,
+      // height: 680
+      width: 900,
+      height: 1640
+    },
     physics: {
       default: "arcade"
-    }
+    },
+    scene: [preloadGame, startGame, playGame, UI],
+
+
   }
   game = new Phaser.Game(gameConfig);
-  window.focus()
-  resize();
-  window.addEventListener("resize", resize, false);
+  window.focus();
 }
+/////////////////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////////////////
 
-var GameSceneStart = new Phaser.Class({
-
-  Extends: Phaser.Scene,
-
-  initialize:
-
-    function GameSceneStart() {
-      Phaser.Scene.call(this, { key: 'GameSceneStart' });
-    },
-
-  preload: function () {
-
-
-  },
-
-  create: function () {
-    var startinfo = this.add.text(game.config.width / 2, game.config.height / 2, 'Start', { font: '24px Arial', fill: '#ffffff' });
-
-
-    //  Make them all input enabled
-    startinfo.setInteractive();
-
-
-    this.input.on('pointerdown', this.clickHandler, this);
-  },
-
-  clickHandler: function (pointer, block) {
-
-
-    //  Dispatch a Scene event
-    this.scene.start('GameScene');
+/////////////////////////////////////////////
+class playGame extends Phaser.Scene {
+  constructor() {
+    super("playGame");
   }
-
-});
-var healthText;
-
-//////////////////////////////////////////////
-
-var GameScene = new Phaser.Class({
-
-  Extends: Phaser.Scene,
-
-  initialize:
-
-    function GameScene() {
-      Phaser.Scene.call(this, { key: 'GameScene' });
-    },
-
-  preload: function () {
-    this.load.image('block', 'assets/falcon3.png');
-    this.load.image('shield', 'assets/blurred-circle.png');
-    this.load.image('bonus', 'assets/bonus3.png');
-    this.load.image('asteroid_small', 'assets/asteroid_small.png');
-
-    this.load.image('bar', 'assets/block.png');
-    this.load.image('enemy', 'assets/tiefighter3.png');
-    this.load.image('laser', 'assets/fire2.png');
-    this.load.image('pixel', 'assets/pixel.png');
-    this.load.bitmapFont("font", "assets/fonts/arcade.png", "assets/fonts/arcade.xml");
+  preload() {
 
 
-  },
-  // shield
-  //fuel, when kids x velocity allows
-  create: function () {
+  }
+  create() {
+
+
+    this.cameras.main.setBackgroundColor(0x000000);
+    this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back').setAlpha(.6)
+    this.tileSprite2 = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back2').setAlpha(.8)
+
+    //this.tileSprite.autoScroll(0, 100)
     this.input.addPointer(9);
-    this.hyperspace = false;
-    this.hasShield = false;
-    this.isImmune = false;
-    this.bonusType = 1;
-    this.immuneCount = 0;
-    var enemyGroup = this.physics.add.group({
+
+    enemyGroup = this.physics.add.group({
       defaultKey: "enemy",
       maxSize: 15,
       visible: false,
       active: false
     });
 
-    var laserGroup = this.physics.add.group({
+    laserGroup = this.physics.add.group({
       defaultKey: "laser",
       maxSize: 16,
       visible: false,
       active: false
     });
 
-    var tieLaserGroup = this.physics.add.group({
+    tieLaserGroup = this.physics.add.group({
       defaultKey: "laser",
       maxSize: 16,
       visible: false,
       active: false
     });
 
-    var bonusGroup = this.physics.add.group({
+    bonusGroup = this.physics.add.group({
       defaultKey: "bonus",
       maxSize: 5,
       visible: false,
       active: false
     });
 
-    var smallAsteroidGroup = this.physics.add.group({
+    smallAsteroidGroup = this.physics.add.group({
       defaultKey: "asteroid_small",
       maxSize: 20,
       visible: false,
       active: false
     });
 
-    this.shield = this.physics.add.image(-100, - 100, "shield").setScale(1).setAlpha(.1);
+    this.hyperspace = false;
+    this.hasShield = false;
+    this.sheildStrengthMax = 100
+    this.sheildStrength = 100
+    this.isImmune = false;
+    this.bonusType = 1;
+    this.immuneCount = 0;
+    this.moving = false;
+    this.healthMax = 100
+    this.health = 100;
+    this.score = 0
+    this.scoreBuffer = 0
+
+    this.shield = this.physics.add.image(-100, - 100, "shield").setScale(1).setAlpha(.4);
     this.shield.body.setImmovable(true);
 
-    this.theBlock = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(.75);
-    this.theBlock.body.setImmovable(true);
-    this.theBlock.body.collideWorldBounds = true;
-    this.health = 100;
-    // this.theBlock.displaWidth=50;
-    // this.theBlock.displaHeight=50;
+    this.falcon = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
+    this.falcon.body.setImmovable(true);
+    this.falcon.body.collideWorldBounds = true;
 
-    healthText = this.add.bitmapText(game.config.width / 2, 25, "font", "ccc", 40);
-    healthText.setText(this.health);
+    // this.falcon.displaWidth=50;
+    // this.falcon.displaHeight=50;
 
-    this.moving = false;
-    //  Make them all input enabled
+    this.makeUI()
 
 
-
-    this.bar = this.physics.add.image(game.config.width / 2, game.config.height - 5, "bar").setAlpha(.5);
-    this.bar.setInteractive();
-    this.bar.displayWidth = 380;
-    this.bar.displayHeight = 100;
-
-    this.healthBarback = this.makeBar(0, game.config.height - 25, 0x333333);
-    this.healthBar = this.makeBar(0, game.config.height - 25, 0x2ecc71);
-    this.setValue(this.healthBar, this.health);
 
     this.input.on('pointermove', this.move, this);
     this.input.on('pointerdown', this.startMove, this);
@@ -192,13 +139,13 @@ var GameScene = new Phaser.Class({
             // particle lifespan: 1 second
             lifespan: 1000
         });*/
-    //   this.emitter.startFollow(this.theBlock);
+    //   this.emitter.startFollow(this.falcon);
 
-    this.input.on('pointerdown', this.fire, this);
+    this.input.on('pointerup', this.fire, this);
     this.varytimer = Math.floor(Math.random() * 3);
 
     this.time.addEvent({
-      delay: 1500,
+      delay: 1700,
       loop: true,
       callback: () => {
         this.createEnemy();
@@ -222,33 +169,41 @@ var GameScene = new Phaser.Class({
     });
     // this.input.on('pointerdown', this.clickHandler, this);
     this.physics.add.collider(laserGroup, enemyGroup, this.laserHitEnemy, null, this);
-    this.physics.add.collider(this.theBlock, enemyGroup, this.hitByTie, null, this);
-    this.physics.add.collider(this.theBlock, tieLaserGroup, this.hitByTieLaser, null, this);
-    this.physics.add.collider(this.theBlock, bonusGroup, this.hitByBonus, null, this);
+    this.physics.add.collider(this.falcon, enemyGroup, this.hitByTie, null, this);
+    this.physics.add.collider(this.falcon, tieLaserGroup, this.hitByTieLaser, null, this);
+    this.physics.add.collider(this.falcon, bonusGroup, this.hitByBonus, null, this);
     this.physics.add.collider(smallAsteroidGroup, smallAsteroidGroup, this.hitByBonus, null, this);
     this.physics.add.collider(smallAsteroidGroup, this.shield);
 
     this.physics.add.collider(this.shield, tieLaserGroup, this.shieldHitByTieLaser, null, this);
     this.physics.add.overlap(laserGroup, smallAsteroidGroup, this.laserHitAsteroid, null, this);
 
-  },
-
-  update: function () {
-    // enemyGroup.incX(-8);
+    /* this.input.on("pointerdown", this.gemSelect, this);
+     this.input.on("pointermove", this.drawPath, this);
+     this.input.on("pointerup", this.removeGems, this);
+    */
+    //this.check = this.add.image(725, 1000, 'check').setScale(.7);
+  }
+  update() {
+    if (this.scoreBuffer > 0) {
+      this.incrementScore()
+    }
+    this.tileSprite.tilePositionY -= 5;
+    this.tileSprite2.tilePositionY -= 6.5;
     if (this.isImmune) {
       this.immuneCount++
       if (this.immuneCount == 100) {
         this.isImmune = false;
-        this.theBlock.setAlpha(1);
+        this.falcon.setAlpha(1);
         this.immuneCount = 0;
       }
     }
     if (this.hyperspace) {
-      if (this.theBlock.x < 0) {
-        this.theBlock.setPosition(360, this.theBlock.y);
+      if (this.falcon.x < 0) {
+        this.falcon.setPosition(game.config.width, this.falcon.y);
       }
-      if (this.theBlock.x > 360) {
-        this.theBlock.setPosition(0, this.theBlock.y);
+      if (this.falcon.x > game.config.width) {
+        this.falcon.setPosition(0, this.falcon.y);
       }
     } else {
 
@@ -256,26 +211,11 @@ var GameScene = new Phaser.Class({
     }
 
     if (this.hasShield) {
-      this.shield.setPosition(this.theBlock.x, this.theBlock.y);
-      if (this.health < 30) {
-        this.hasShield = false;
-        this.tweens.add({
-          targets: this.shield,
-          alpha: 0,
-          scale: .3,
-          ease: "Linear",
-          durration: 100,
-          repeat: 2,
+      this.shield.setPosition(this.falcon.x, this.falcon.y);
 
-          callbackScope: this,
-          onComplete: function () {
-            this.shield.setPosition(-100, -100);
-          }
-        });
-      }
     }
     if (this.health <= 0) {
-      this.scene.start('GameScene');
+      this.scene.start('playGame');
     }
 
     enemyGroup.getChildren().forEach(enemy => {
@@ -291,27 +231,41 @@ var GameScene = new Phaser.Class({
     });
 
     tieLaserGroup.getChildren().forEach(laser => {
-      if (laser.active && laser.y > 640) {
+      if (laser.active && laser.y > game.config.height) {
         tieLaserGroup.killAndHide(laser);
       }
     });
 
     bonusGroup.getChildren().forEach(bonus => {
-      if (bonus.active && bonus.y > 640) {
+      if (bonus.active && bonus.y > game.config.height) {
         bonusGroup.killAndHide(bonus);
       }
     });
 
     smallAsteroidGroup.getChildren().forEach(ast => {
-      if (ast.active && ast.y > 640) {
+      if (ast.active && ast.y > game.config.height) {
         smallAsteroidGroup.killAndHide(ast);
       }
     });
-  },
-  hitByTie: function (falcon, tie) {
+  }
+  incrementScore() {
+    this.score += 1
+    this.scoreText.setText(this.score)
+    this.scoreBuffer -= 1
+  }
+  hitByTie(falcon, tie) {
     if (!this.isImmune) {
-      this.health -= 20;
-      healthText.setText(this.health);
+      if (this.hasShield) {
+        this.health -= 5;
+        this.sheildStrength -= 10
+        this.setValue(this.sheildBar, this.sheildStrength, this.sheildStrengthMax)
+        if (this.sheildStrength <= 0) {
+          this.dropShield()
+        }
+      } else {
+        this.health -= 20;
+      }
+      this.healthText.setText(this.health);
       this.setValue(this.healthBar, this.health);
       this.isImmune = true;
       falcon.setAlpha(.3);
@@ -320,20 +274,23 @@ var GameScene = new Phaser.Class({
     enemyGroup.killAndHide(tie);
     this.destroyEnemy(tie);
 
-  },
-  hitByBonus: function (falcon, bonus) {
+  }
+  hitByBonus(falcon, bonus) {
     if (bonus.type == 1) {
       this.health = 100;
-      healthText.setText(this.health);
+      this.healthText.setText(this.health);
       this.setValue(this.healthBar, this.health);
       this.hasShield = true;
+      this.sheildStrength = 100;
+      this.sheildBarback.setAlpha(1)
+      this.sheildBar.setAlpha(1)
     } else if (bonus.type == 2) {
       this.hyperspace = true;
       falcon.body.collideWorldBounds = false;
       this.health = 100;
-      healthText.setText(this.health);
+      this.healthText.setText(this.health);
       this.setValue(this.healthBar, this.health);
-      this.bar.tint = 0xffbbee;
+      //this.bar.tint = 0xffbbee;
     }
 
     this.cameras.main.shake(100, 0.01);
@@ -341,11 +298,11 @@ var GameScene = new Phaser.Class({
     bonusGroup.killAndHide(bonus);
     this.destroyEnemy(bonus);
 
-  },
-  hitByTieLaser: function (falcon, tiel) {
+  }
+  hitByTieLaser(falcon, tiel) {
     if (!this.isImmune) {
       this.health -= 10;
-      healthText.setText(this.health);
+      this.healthText.setText(this.health);
       this.setValue(this.healthBar, this.health);
       this.isImmune = true;
       falcon.setAlpha(.3);
@@ -354,15 +311,38 @@ var GameScene = new Phaser.Class({
     tieLaserGroup.killAndHide(tiel);
     this.destroyEnemy(tiel);
 
-  },
-  shieldHitByTieLaser: function (shield, tiel) {
+  }
+  shieldHitByTieLaser(shield, tiel) {
 
     this.cameras.main.shake(400, 0.01);
     tieLaserGroup.killAndHide(tiel);
+    this.sheildStrength -= 10
+    this.setValue(this.sheildBar, this.sheildStrength, this.sheildStrengthMax)
+    if (this.sheildStrength <= 0) {
+      this.dropShield()
+    }
     this.destroyEnemy(tiel);
 
-  },
-  destroyEnemy: function (enemy) {
+  }
+  dropShield() {
+    this.hasShield = false;
+    this.sheildBarback.setAlpha(0)
+    this.sheildBar.setAlpha(0)
+    this.tweens.add({
+      targets: this.shield,
+      alpha: 0,
+      scale: .3,
+      ease: "Linear",
+      durration: 100,
+      repeat: 2,
+
+      callbackScope: this,
+      onComplete: function () {
+        this.shield.setPosition(-100, -100);
+      }
+    });
+  }
+  destroyEnemy(enemy) {
     enemy.body.enable = false;
     var particles = this.add.particles("pixel");
     var emitter = particles.createEmitter({
@@ -390,11 +370,11 @@ var GameScene = new Phaser.Class({
     emitter.explode(20, enemy.x, enemy.y);
 
 
-  },
-  falconHit: function (falcon, enemy) {
+  }
+  falconHit(falcon, enemy) {
     if (!this.isImmune) {
       this.health -= 10;
-      healthText.setText(this.health);
+      this.healthText.setText(this.health);
       this.isImmune = true;
       falcon.setAlpha(.3);
       this.cameras.main.shake(400, 0.01);
@@ -404,11 +384,12 @@ var GameScene = new Phaser.Class({
 
 
 
-  },
-  laserHitEnemy: function (laser, enemy) {
+  }
+  laserHitEnemy(laser, enemy) {
     enemyGroup.killAndHide(enemy);
     laserGroup.killAndHide(laser);
     laser.body.enable = false;
+    this.scoreBuffer += 50
     var particles = this.add.particles("pixel");
     var emitter = particles.createEmitter({
       // particle speed - particles do not move
@@ -433,44 +414,50 @@ var GameScene = new Phaser.Class({
       lifespan: 500
     });
     emitter.explode(20, enemy.x, enemy.y);
-  },
-  laserHitAsteroid: function (laser, enemy) {
-    smallAsteroidGroup.killAndHide(enemy);
+  }
+  laserHitAsteroid(laser, enemy) {
+    console.log(enemy.health)
     laserGroup.killAndHide(laser);
     laser.body.enable = false;
-    var particles = this.add.particles("pixel");
-    var emitter = particles.createEmitter({
-      // particle speed - particles do not move
-      // speed: 1000,
-      speed: {
-        min: -1000,
-        max: 1000
-      },
-      // particle scale: from 1 to zero
-      scale: {
-        start: 1,
-        end: 0
-      },
-      // particle alpha: from opaque to transparent
-      alpha: {
-        start: 1,
-        end: 0
-      },
-      // particle frequency: one particle every 100 milliseconds
-      frequency: 25,
-      // particle lifespan: 1 second
-      lifespan: 500
-    });
-    emitter.explode(20, enemy.x, enemy.y);
-  },
-  createEnemy: function () {
+    if (enemy.health > 0) {
+      enemy.health -= 35;
+    } else {
+      smallAsteroidGroup.killAndHide(enemy);
+
+      var particles = this.add.particles("pixel");
+      var emitter = particles.createEmitter({
+        // particle speed - particles do not move
+        // speed: 1000,
+        speed: {
+          min: -1000,
+          max: 1000
+        },
+        // particle scale: from 1 to zero
+        scale: {
+          start: 1,
+          end: 0
+        },
+        // particle alpha: from opaque to transparent
+        alpha: {
+          start: 1,
+          end: 0
+        },
+        // particle frequency: one particle every 100 milliseconds
+        frequency: 25,
+        // particle lifespan: 1 second
+        lifespan: 500
+      });
+      emitter.explode(20, enemy.x, enemy.y);
+    }
+  }
+  createEnemy() {
     let bitcoinPosition = Math.floor(Math.random() * 5);
-    var enemy = enemyGroup.get([50, 100, 190, 250, 300][bitcoinPosition], 0)
+    var enemy = enemyGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
       .setActive(true)
       .setVisible(true)
-      .setScale(1);
+      .setScale(2);
     enemy.body.enable = true;
-    enemy.body.setVelocityY(100);
+    enemy.body.setVelocityY(400);
     var side = Phaser.Math.Between(1, 2);
     if (side == 1) {
       enemy.body.setVelocityX(-20);
@@ -480,22 +467,22 @@ var GameScene = new Phaser.Class({
 
     this.tieFire(enemy.x, enemy.y, 0);
 
-  },
-  createAsteroid: function (type) {
+  }
+  createAsteroid(type) {
     let bitcoinPosition = Math.floor(Math.random() * 5);
 
     if (type == 1) {
-      var enemy = smallAsteroidGroup.get([50, 100, 190, 250, 300][bitcoinPosition], 0)
+      var enemy = smallAsteroidGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
         .setActive(true)
         .setVisible(true)
-        .setScale(1);
+        .setScale(Phaser.Math.Between(2, 5));
       enemy.health = 100;
     }
 
     enemy.body.enable = true;
     //enemy.body.setVelocityY(Phaser.Math.Between(40, 70));
-    enemy.setGravityY(Phaser.Math.Between(20, 40));
-    enemy.body.setMaxVelocityY(50);
+    enemy.setGravityY(Phaser.Math.Between(30, 100));
+    enemy.body.setMaxVelocityY(100);
     var side = Phaser.Math.Between(1, 2);
     if (side == 1) {
       enemy.body.setVelocityX(-Phaser.Math.Between(15, 25));
@@ -505,29 +492,29 @@ var GameScene = new Phaser.Class({
 
 
 
-  },
-  createBonus: function () {
+  }
+  createBonus() {
     if (this.bonusType == 5) {
       this.bonusType = 1;
     }
     let bonusPosition = Math.floor(Math.random() * 5);
-    var bonus = bonusGroup.get([50, 100, 190, 250, 300][bonusPosition], 0)
+    var bonus = bonusGroup.get([100, 250, 450, 700, 850][bonusPosition], 0)
       .setActive(true)
       .setVisible(true)
-      .setScale(1);
+      .setScale(2);
     bonus.body.enable = true;
-    bonus.type = this.bonusType;
+    bonus.type = 1;
     bonus.body.setVelocityY(100);
-    this.bonusType++;
+    //this.bonusType++;
     console.log(this.bonusType);
-  },
+  }
 
-  startMove: function () {
+  startMove() {
 
     this.moving = true;
 
-  },
-  move: function (pointer) {
+  }
+  move(pointer) {
     if (this.moving) {
       var distX = pointer.x - pointer.downX;
       var distY = pointer.y - pointer.downY;
@@ -539,9 +526,9 @@ var GameScene = new Phaser.Class({
       if (distY > 10 || distX > 10 || distY < 10 || distX > 10) {
         this.canShoot = true;
         if (pointer.downX > pointer.x) {
-          this.theBlock.body.setVelocityX(-300);
+          this.falcon.body.setVelocityX(-400);
         } else {
-          this.theBlock.body.setVelocityX(300);
+          this.falcon.body.setVelocityX(400);
         }
         //  this.trajectory.setPosition(pointer.downX, pointer.downY);
         // this.trajectory.visible = true;
@@ -558,10 +545,10 @@ var GameScene = new Phaser.Class({
     //   this.trajectory.visible = true;
     //  Dispatch a Scene event
 
-  },
-  endMove: function (pointer) {
+  }
+  endMove(pointer) {
     this.moving = false;
-    this.theBlock.body.setVelocityX(0);
+    this.falcon.body.setVelocityX(0);
     /*
   if(this.canShoot){
   var angleOfFire = Phaser.Math.DegToRad(this.trajectory.angle - 90);
@@ -580,44 +567,64 @@ var GameScene = new Phaser.Class({
     this.trajectory.visible = false;
     //  Dispatch a Scene event
   }*/
-  },
+  }
 
-  fire: function (e) {
+  fire(e) {
     if (e.y < game.config.height - 75) {
 
-      this.oneFire(this.theBlock.x - 10, this.theBlock.y, 0);
-      this.oneFire(this.theBlock.x + 10, this.theBlock.y, 0);
+      this.oneFire(this.falcon.x - 10, this.falcon.y, 0);
+      this.oneFire(this.falcon.x + 10, this.falcon.y, 0);
 
       this.health--;
-      healthText.setText(this.health);
+      this.healthText.setText(this.health);
       this.setValue(this.healthBar, this.health);
 
 
     }
-  },
-  oneFire: function (xpos, ypos, angle) {
+  }
+  oneFire(xpos, ypos, angle) {
     var laser = laserGroup.get(xpos, ypos)
       .setActive(true)
       .setVisible(true)
       .setScale(1);
     laser.tint = 0x85dcff;
     laser.body.enable = true;
-    laser.body.setVelocityY(-400);
+    laser.body.setVelocityY(-600);
 
 
-  },
-  tieFire: function (xpos, ypos, angle) {
+  }
+  tieFire(xpos, ypos, angle) {
     var lasert = tieLaserGroup.get(xpos, ypos)
       .setActive(true)
       .setVisible(true)
       .setScale(1);
     lasert.tint = 0xb3372e
     lasert.body.enable = true;
-    lasert.body.setVelocityY(400);
+    lasert.body.setVelocityY(800);
 
 
-  },
-  makeBar: function (x, y, color) {
+  }
+
+  //////////////////////////////////////////////////////
+  //top
+  makeUI() {
+    this.healthText = this.add.bitmapText(550 - 25, 25, "font", this.health, 100).setOrigin(1, 0).setTint(0x00ff33);
+
+    this.scoreText = this.add.bitmapText(75, 25, "font", this.score, 100).setOrigin(0).setTint(0x00ff33);
+
+    this.healthBarback = this.makeBar(550, 40, 0x282828);
+    this.healthBar = this.makeBar(550, 40, 0x2ecc71);
+    this.setValue(this.healthBar, this.health, this.healthMax);
+
+    this.sheildBarback = this.makeBar(550, 75, 0x282828);
+    this.sheildBar = this.makeBar(550, 75, 0xfafafa);
+    this.sheildBarback.setAlpha(0)
+    this.sheildBar.setAlpha(0)
+    this.setValue(this.sheildBar, this.sheildStrength, this.sheildStrengthMax);
+  }
+
+
+  makeBar(x, y, color) {
     //draw the bar
     let bar = this.add.graphics();
 
@@ -625,7 +632,7 @@ var GameScene = new Phaser.Class({
     bar.fillStyle(color, 1);
 
     //fill the bar with a rectangle
-    bar.fillRect(0, 0, 380, 15);
+    bar.fillRect(0, 0, 380, 25);
 
     //position the bar
     bar.x = x;
@@ -633,76 +640,18 @@ var GameScene = new Phaser.Class({
 
     //return the bar
     return bar;
-  },
-  setValue: function (bar, percentage) {
+  }
+  setValue(bar, percentage, max) {
     //scale the bar
-    bar.scaleX = percentage / 100;
-  },
-  clickHandler: function (pointer, block) {
+    bar.scaleX = percentage / max;
+  }
+  clickHandler(pointer, block) {
 
 
     //  Dispatch a Scene event
     this.events.emit('addScore');
   }
-
-});
-/////////////////////////////////////////////
-var UIScene = new Phaser.Class({
-
-  Extends: Phaser.Scene,
-
-  initialize:
-
-    function UIScene() {
-      Phaser.Scene.call(this, { key: 'UIScene', active: true });
-
-      this.score = 0;
-    },
-
-  create: function () {
-    //  Our Text object to display the Score
-    var info = this.add.text(10, 10, 'Score: 0', { font: '24px Arial', fill: '#ffffff' });
-
-    //  Grab a reference to the Game Scene
-    var ourGame = this.scene.get('GameScene');
-
-    //  Listen for events from it
-    ourGame.events.on('addScore', function () {
-
-      this.score += 10;
-
-      info.setText('Score: ' + this.score);
-
-    }, this);
-  }
-
-});
-/*
-var config = {
-    type: Phaser.AUTO,
-    width: 380,
-    height: 600,
-    backgroundColor: '#000000',
-    parent: 'phaser-example',
-    scene: [ GameScene, UIScene ]
-};
-
-game = new Phaser.Game(config);*/
-function resize() {
-
-  var canvas = document.querySelector("canvas");
-
-  var windowWidth = window.innerWidth;
-  var windowHeight = window.innerHeight;
-  var windowRatio = windowWidth / windowHeight;
-  var gameRatio = game.config.width / game.config.height;
-  if (windowRatio < gameRatio) {
-    canvas.style.width = windowWidth + "px";
-    canvas.style.height = (windowWidth / gameRatio) + "px";
-  }
-  else {
-    canvas.style.width = (windowHeight * gameRatio) + "px";
-    canvas.style.height = windowHeight + "px";
+  addScore() {
+    this.events.emit('score');
   }
 }
-

@@ -85,6 +85,13 @@ class preloadGame extends Phaser.Scene {
     this.load.image('enemy', 'assets/tiefighter3.png');
     this.load.image('laser', 'assets/fire2.png');
 
+    this.load.image("sprBg0", "assets/sprBg0.png");
+    this.load.image("sprBg1", "assets/sprBg1.png");
+
+    this.load.spritesheet("sprExplosion", "assets/sprExplosion.png", {
+      frameWidth: 32,
+      frameHeight: 32
+    });
     this.load.bitmapFont("font", "assets/fonts/arcade.png", "assets/fonts/arcade.xml");
 
   }
