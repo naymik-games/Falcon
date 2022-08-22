@@ -38,6 +38,7 @@ class playGame extends Phaser.Scene {
   }
   preload() {
 
+    this.load.plugin('rexvirtualjoystickplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexvirtualjoystickplugin.min.js', true);
 
   }
   create() {
@@ -55,6 +56,21 @@ class playGame extends Phaser.Scene {
 
     this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'sprBg0').setAlpha(.6)
     this.tileSprite2 = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back2').setAlpha(.8)
+
+
+    this.joyStick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
+      x: 200,
+      y: 1200,
+      radius: 100,
+      //base: baseGameObject,
+      //thumb: thumbGameObject,
+      dir: '8dir',
+      // forceMin: 16,
+      // fixed: true,
+      // enable: true
+    }).on('update', this.updateJoystickState, this);
+    this.cursorKeys = this.joyStick.createCursorKeys();;
+
     this.lastTime = 0
     this.input.addPointer(9);
 
@@ -103,7 +119,7 @@ class playGame extends Phaser.Scene {
 
 
 
-    this.input.on('pointermove', this.move, this);
+    //  this.input.on('pointermove', this.move, this);
     this.input.on('pointerdown', this.startMove, this);
     this.input.on('pointerup', this.endMove, this);
 
@@ -178,7 +194,7 @@ class playGame extends Phaser.Scene {
     this.startWave()
   }
   update() {
-
+    this.updateJoystickState();
     if (gameMode == PLAY) {
       this.physics.add.collider(bullets, enemies, this.laserHitEnemy, null, this);
       this.physics.add.collider(falcon, enemies, this.hitByTie, null, this);
@@ -265,6 +281,40 @@ class playGame extends Phaser.Scene {
        }
      });*/
   }
+
+
+  updateJoystickState() {
+    let direction = '';
+    for (let key in this.cursorKeys) {
+      if (this.cursorKeys[key].isDown) {
+        direction += key;
+      }
+    }
+
+    // If no direction if provided then stop 
+    // the player animations and exit the method
+    if (direction.length === 0) {
+      //  this.stopPlayerAnimations();
+      return;
+    }
+
+    // If last cursor direction is different
+    //  the stop all player animations
+    if (this.lastCursorDirection !== direction) {
+      //this.stopPlayerAnimations();
+    }
+
+    // Set the new cursor direction
+    this.lastCursorDirection = direction;
+    // console.log(this.lastCursorDirection)
+    // Handle the player moving
+    this.movePlayer();
+
+    // Set debug info about the cursor
+    //this.setCursorDebugInfo();
+  }
+
+
   incrementScore() {
     this.score += 1
     this.scoreText.setText(this.score)
@@ -319,6 +369,52 @@ class playGame extends Phaser.Scene {
     this.moving = true;
     this.shooting = true
   }
+
+
+
+  movePlayer() {
+    if (this.lastCursorDirection === "up") {
+      //this.player.y -= this.playerSpeed;
+      falcon.moveUp()
+    } else if (this.lastCursorDirection === "down") {
+      //this.player.y += this.playerSpeed;
+      falcon.moveDown()
+
+    } else if (this.lastCursorDirection === "right") {
+      //this.player.x += this.playerSpeed;
+      falcon.moveRight()
+
+    } else if (this.lastCursorDirection === "left") {
+      //this.player.x -= this.playerSpeed;
+      falcon.moveLeft()
+
+    } else if (this.lastCursorDirection === "upright") {
+      // this.player.x += this.playerSpeed;
+      // this.player.y -= this.playerSpeed;
+      falcon.moveUp()
+      falcon.moveRight()
+    } else if (this.lastCursorDirection === "downright") {
+      // this.player.x += this.playerSpeed;
+      // this.player.y += this.playerSpeed;
+      falcon.moveDown()
+      falcon.moveRight()
+    } else if (this.lastCursorDirection === "downleft") {
+      // this.player.x -= this.playerSpeed;
+      //  this.player.y += this.playerSpeed;
+      falcon.moveDown()
+      falcon.moveLeft()
+    } else if (this.lastCursorDirection === "upleft") {
+      //  this.player.x -= this.playerSpeed;
+      // this.player.y -= this.playerSpeed;
+      falcon.moveUp()
+      falcon.moveLeft()
+    } else {
+      //  this.player.x = 0;
+      //  this.player.y = 0;
+    }
+  }
+
+
   move(pointer) {
     if (this.moving) {
       var distX = pointer.x - pointer.downX;

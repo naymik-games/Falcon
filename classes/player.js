@@ -44,8 +44,18 @@ class Player extends Phaser.GameObjects.Sprite {
   moveRight() {
     this.body.velocity.x = this.speed;
   }
+  moveUp() {
+    this.body.velocity.y = -this.speed;
+  }
+  moveDown() {
+    this.body.velocity.y = + this.speed;
+  }
+  moveRight() {
+    this.body.velocity.x = this.speed;
+  }
   stop() {
     this.body.velocity.x = 0
+    this.body.velocity.y = 0
   }
   fire() {
     addBullet(this.x + 10, this.y, -90, 10, 1000, 750)
