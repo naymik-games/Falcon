@@ -307,6 +307,7 @@ class playGame extends Phaser.Scene {
   laserHitEnemy(bullet, enemy) {
     console.log(enemy)
     enemy.receiveDamage(10, this)
+    bullet.remove()
   }
   startMove() {
     let clickDelay = this.time.now - this.lastTime;
@@ -327,7 +328,7 @@ class playGame extends Phaser.Scene {
       this.downY = pointer.downY;
       // this.ball.setPosition(this.downX, this.downY);
 
-      if (distY > 10 || distX > 10 || distY < 10 || distX > 10) {
+      if (distY > 20 || distX > 20 || distY < 20 || distX > 20) {
         this.canShoot = true;
 
         if (pointer.downX > pointer.x) {

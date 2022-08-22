@@ -46,7 +46,10 @@ var Bullet = new Phaser.Class({
     console.log(this.towerJ)
     console.log(this.range) */
   },
-
+  remove: function () {
+    this.setActive(false);
+    this.setVisible(false);
+  },
   update: function (time, delta) {
     this.lifespan -= this.speed * delta;
 

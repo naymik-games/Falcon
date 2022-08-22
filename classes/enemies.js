@@ -8,9 +8,11 @@ var Enemy = new Phaser.Class({
 
       Phaser.GameObjects.Image.call(this, scene, 450, 0, 'enemy', 0);
       this.setScale(2)
+      this.setAlpha(1)
       //this.spawn = spawnPoints[spawnAlt]
 
       this.scene = scene
+      this.scene.physics.world.enableBody(this, 0);
       // let bitcoinPosition = Math.floor(Math.random() * 5);
       //  var enemy = enemyGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
       //console.log(this.spawn)
@@ -69,9 +71,9 @@ var Enemy = new Phaser.Class({
     this.body.setVelocityY(this.speed);
     var side = Phaser.Math.Between(1, 2);
     if (side == 1) {
-      this.body.setVelocityX(-20);
+      this.body.setVelocityX(-15);
     } else {
-      this.body.setVelocityX(20);
+      this.body.setVelocityX(15);
     }
   },
   remove: function () {
@@ -181,7 +183,7 @@ let enemyTypes = [
     name: 'Tie',
     hp: 20,
     reward: 50,
-    speed: 300,
+    speed: 250,
     frame: 0,
     canShoot: true
   },
