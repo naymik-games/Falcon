@@ -1,7 +1,9 @@
 let game;
 
-var enemyGroup, laserGroup, smallAsteroidGroup, tieLaserGroup, bonusGroup
 
+const PLAY = 0
+const REST = 1
+let gameMode = REST
 window.onload = function () {
   let gameConfig = {
     type: Phaser.AUTO,
@@ -15,6 +17,7 @@ window.onload = function () {
       height: 1640
     },
     physics: {
+      debug: true,
       default: "arcade"
     },
     scene: [preloadGame, startGame, playGame, UI],
@@ -52,43 +55,13 @@ class playGame extends Phaser.Scene {
 
     this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'sprBg0').setAlpha(.6)
     this.tileSprite2 = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back2').setAlpha(.8)
-
+    this.lastTime = 0
     this.input.addPointer(9);
 
-    enemyGroup = this.physics.add.group({
-      defaultKey: "enemy",
-      maxSize: 15,
-      visible: false,
-      active: false
-    });
+    enemies = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
 
-    laserGroup = this.physics.add.group({
-      defaultKey: "laser",
-      maxSize: 16,
-      visible: false,
-      active: false
-    });
-
-    tieLaserGroup = this.physics.add.group({
-      defaultKey: "laser",
-      maxSize: 16,
-      visible: false,
-      active: false
-    });
-
-    bonusGroup = this.physics.add.group({
-      defaultKey: "bonus",
-      maxSize: 5,
-      visible: false,
-      active: false
-    });
-
-    smallAsteroidGroup = this.physics.add.group({
-      defaultKey: "asteroid_small",
-      maxSize: 20,
-      visible: false,
-      active: false
-    });
+    bullets = this.physics.add.group({ classType: Bullet, runChildUpdate: true });
+    // enemyBullets = this.physics.add.group({ classType: EnemyBullet, runChildUpdate: true });
 
     this.anims.create({
       key: "sprExplosion",
@@ -98,32 +71,33 @@ class playGame extends Phaser.Scene {
     });
 
     this.hyperspace = false;
-    this.hasShield = false;
-    this.sheildStrengthMax = 100
-    this.sheildStrength = 100
-    this.isImmune = false;
+
     this.bonusType = 1;
     this.immuneCount = 0;
     this.moving = false;
-    this.healthMax = 100
-    this.health = 100;
+
     this.score = 0
     this.scoreBuffer = 0
 
+    this.tieSpeed = 400
+    this.bgSpeed = 0
+    this.bgSpeedArray = [[3, 4.5], [5, 6.5]]
     this.shield = this.physics.add.image(-100, - 100, "shield").setScale(1).setAlpha(.4);
     this.shield.body.setImmovable(true);
 
-    //this.falcon = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
-    this.falcon = new Player(
+    //falcon = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
+    falcon = new Player(
       this,
       game.config.width / 2,
-      game.config.height - 100,
-      "block"
+      game.config.height - 200,
+      'block',
+      0
+
     );
 
 
-    // this.falcon.displaWidth=50;
-    // this.falcon.displaHeight=50;
+    // falcon.displaWidth=50;
+    // falcon.displaHeight=50;
 
     this.makeUI()
 
@@ -159,74 +133,86 @@ class playGame extends Phaser.Scene {
             // particle lifespan: 1 second
             lifespan: 1000
         });*/
-    //   this.emitter.startFollow(this.falcon);
+    //   this.emitter.startFollow(falcon);
 
-    this.input.on('pointerup', this.fire, this);
+    //  this.input.on('pointerup', this.fire, this);
     this.varytimer = Math.floor(Math.random() * 3);
-
     this.time.addEvent({
+      delay: 6000,
+      loop: true,
+      callback: () => {
+        gameMode = PLAY
+      }
+    });
+    /* this.time.addEvent({
       delay: 1700,
       loop: true,
       callback: () => {
         this.createEnemy();
       }
-    });
+    }); */
 
-    this.time.addEvent({
-      delay: 10000,
-      loop: true,
-      callback: () => {
-        this.createBonus();
-      }
-    });
+    /*  this.time.addEvent({
+       delay: 10000,
+       loop: true,
+       callback: () => {
+         this.createBonus();
+       }
+     }); */
 
-    this.time.addEvent({
-      delay: 3000,
+    /* this.time.addEvent({
+      delay: 5000,
       loop: true,
       callback: () => {
         this.createAsteroid(1);
       }
-    });
+    }); */
     // this.input.on('pointerdown', this.clickHandler, this);
-    this.physics.add.collider(laserGroup, enemyGroup, this.laserHitEnemy, null, this);
-    this.physics.add.collider(this.falcon, enemyGroup, this.hitByTie, null, this);
-    this.physics.add.collider(this.falcon, tieLaserGroup, this.hitByTieLaser, null, this);
-    this.physics.add.collider(this.falcon, bonusGroup, this.hitByBonus, null, this);
-    this.physics.add.collider(smallAsteroidGroup, smallAsteroidGroup, this.hitByBonus, null, this);
-    this.physics.add.collider(smallAsteroidGroup, this.shield);
 
-    this.physics.add.collider(this.shield, tieLaserGroup, this.shieldHitByTieLaser, null, this);
-    this.physics.add.overlap(laserGroup, smallAsteroidGroup, this.laserHitAsteroid, null, this);
 
     /* this.input.on("pointerdown", this.gemSelect, this);
      this.input.on("pointermove", this.drawPath, this);
      this.input.on("pointerup", this.removeGems, this);
     */
     //this.check = this.add.image(725, 1000, 'check').setScale(.7);
+    this.startWave()
   }
   update() {
+
+    if (gameMode == PLAY) {
+      this.physics.add.collider(bullets, enemies, this.laserHitEnemy, null, this);
+      this.physics.add.collider(falcon, enemies, this.hitByTie, null, this);
+      // this.physics.add.collider(falcon, tieLaserGroup, falcon.hitByTieLaser, null, this);
+      // this.physics.add.collider(falcon, bonusGroup, falcon.hitByBonus, null, this);
+      // this.physics.add.collider(smallAsteroidGroup, smallAsteroidGroup, this.hitByBonus, null, this);
+      // this.physics.add.collider(smallAsteroidGroup, this.shield);
+
+      // this.physics.add.collider(this.shield, tieLaserGroup, this.shieldHitByTieLaser, null, this);
+      // this.physics.add.overlap(laserGroup, smallAsteroidGroup, this.laserHitAsteroid, null, this);
+    }
+
+
+
     if (this.scoreBuffer > 0) {
       this.incrementScore()
     }
-    /* for (var i = 0; i < this.backgrounds.length; i++) {
-      this.backgrounds[i].update();
-    } */
-    this.tileSprite.tilePositionY -= 5;
-    this.tileSprite2.tilePositionY -= 6.5;
-    if (this.isImmune) {
-      this.immuneCount++
-      if (this.immuneCount == 100) {
-        this.isImmune = false;
-        this.falcon.setAlpha(1);
-        this.immuneCount = 0;
-      }
+    /*  for (var i = 0; i < this.backgrounds.length; i++) {
+       this.backgrounds[i].update();
+     } */
+    if (this.score > 2000) {
+      this.falconSpeed = 600
+      this.tieSpeed = 600
+      this.bgSpeed = 1
     }
+    this.tileSprite.tilePositionY -= this.bgSpeedArray[this.bgSpeed][0];
+    this.tileSprite2.tilePositionY -= this.bgSpeedArray[this.bgSpeed][1];
+
     if (this.hyperspace) {
-      if (this.falcon.x < 0) {
-        this.falcon.setPosition(game.config.width, this.falcon.y);
+      if (falcon.x < 0) {
+        falcon.setPosition(game.config.width, falcon.y);
       }
-      if (this.falcon.x > game.config.width) {
-        this.falcon.setPosition(0, this.falcon.y);
+      if (falcon.x > game.config.width) {
+        falcon.setPosition(0, falcon.y);
       }
     } else {
 
@@ -234,313 +220,101 @@ class playGame extends Phaser.Scene {
     }
 
     if (this.hasShield) {
-      this.shield.setPosition(this.falcon.x, this.falcon.y);
+      this.shield.setPosition(falcon.x, falcon.y);
 
     }
     if (this.health <= 0) {
       this.scene.start('playGame');
     }
-
-    enemyGroup.getChildren().forEach(enemy => {
-      if (enemy.active && enemy.y > game.config.height) {
-        enemyGroup.killAndHide(enemy);
+    var enemyUnits = enemies.getChildren();
+    for (var i = 0; i < enemyUnits.length; i++) {
+      if (enemyUnits[i].active && enemyUnits[i].y > game.config.height) {
+        enemyUnits[i].remove()
       }
-    });
+    }
+    /*  enemies.getChildren().forEach(enemy => {
+       if (enemy.active && enemy.y > game.config.height) {
+         // enemy.healthBar.setText('')
+         //  enemies.killAndHide(enemy);
+         tieLaserGroup
+ 
+       }
+     }); */
 
-    laserGroup.getChildren().forEach(laser => {
-      if (laser.active && laser.y < 0) {
-        laserGroup.killAndHide(laser);
-      }
-    });
-
-    tieLaserGroup.getChildren().forEach(laser => {
-      if (laser.active && laser.y > game.config.height) {
-        tieLaserGroup.killAndHide(laser);
-      }
-    });
-
-    bonusGroup.getChildren().forEach(bonus => {
-      if (bonus.active && bonus.y > game.config.height) {
-        bonusGroup.killAndHide(bonus);
-      }
-    });
-
-    smallAsteroidGroup.getChildren().forEach(ast => {
-      if (ast.active && ast.y > game.config.height) {
-        smallAsteroidGroup.killAndHide(ast);
-      }
-    });
+    /*  laserGroup.getChildren().forEach(laser => {
+       if (laser.active && laser.y < 0) {
+         laserGroup.killAndHide(laser);
+       }
+     });
+ 
+     tieLaserGroup.getChildren().forEach(laser => {
+       if (laser.active && laser.y > game.config.height) {
+         tieLaserGroup.killAndHide(laser);
+       }
+     });
+ 
+     bonusGroup.getChildren().forEach(bonus => {
+       if (bonus.active && bonus.y > game.config.height) {
+         bonusGroup.killAndHide(bonus);
+       }
+     });
+ 
+     smallAsteroidGroup.getChildren().forEach(ast => {
+       if (ast.active && ast.y > game.config.height) {
+         smallAsteroidGroup.killAndHide(ast);
+       }
+     });*/
   }
   incrementScore() {
     this.score += 1
     this.scoreText.setText(this.score)
     this.scoreBuffer -= 1
   }
-  hitByTie(falcon, tie) {
-    if (!this.isImmune) {
-      if (this.hasShield) {
-        this.health -= 5;
-        this.sheildStrength -= 10
-        this.setValue(this.sheildBar, this.sheildStrength, this.sheildStrengthMax)
-        if (this.sheildStrength <= 0) {
-          this.dropShield()
+
+
+  startWave() {
+    // console.log(Date.now())
+
+
+    var timer = this.time.addEvent({
+      // delay: this.level.waves[this.onWave].spawnRate,                // ms
+      delay: 2000,
+      callback: function () {
+        var enemy = enemies.get();
+        if (enemy) {
+          enemy.setType(enemyTypes[0], 0)
+
+          enemy.setActive(true);
+          enemy.setVisible(true);
+          enemy.launch(this);
+
         }
-      } else {
-        this.health -= 20;
-      }
-      this.healthText.setText(this.health);
-      this.setValue(this.healthBar, this.health);
-      this.isImmune = true;
-      falcon.setAlpha(.3);
-      this.cameras.main.shake(400, 0.01);
-    }
-    enemyGroup.killAndHide(tie);
-    this.destroyEnemy(tie);
-
-  }
-  hitByBonus(falcon, bonus) {
-    if (bonus.type == 1) {
-      this.health = 100;
-      this.healthText.setText(this.health);
-      this.setValue(this.healthBar, this.health);
-      this.hasShield = true;
-      this.sheildStrength = 100;
-      this.sheildBarback.setAlpha(1)
-      this.sheildBar.setAlpha(1)
-    } else if (bonus.type == 2) {
-      this.hyperspace = true;
-      falcon.body.collideWorldBounds = false;
-      this.health = 100;
-      this.healthText.setText(this.health);
-      this.setValue(this.healthBar, this.health);
-      //this.bar.tint = 0xffbbee;
-    }
-
-    this.cameras.main.shake(100, 0.01);
-
-    bonusGroup.killAndHide(bonus);
-    this.destroyEnemy(bonus);
-
-  }
-  hitByTieLaser(falcon, tiel) {
-    if (!this.isImmune) {
-      this.health -= 10;
-      this.healthText.setText(this.health);
-      this.setValue(this.healthBar, this.health);
-      this.isImmune = true;
-      falcon.setAlpha(.3);
-      this.cameras.main.shake(400, 0.01);
-    }
-    tieLaserGroup.killAndHide(tiel);
-    this.destroyEnemy(tiel);
-
-  }
-  shieldHitByTieLaser(shield, tiel) {
-
-    this.cameras.main.shake(400, 0.01);
-    tieLaserGroup.killAndHide(tiel);
-    this.sheildStrength -= 10
-    this.setValue(this.sheildBar, this.sheildStrength, this.sheildStrengthMax)
-    if (this.sheildStrength <= 0) {
-      this.dropShield()
-    }
-    this.destroyEnemy(tiel);
-
-  }
-  dropShield() {
-    this.hasShield = false;
-    this.sheildBarback.setAlpha(0)
-    this.sheildBar.setAlpha(0)
-    this.tweens.add({
-      targets: this.shield,
-      alpha: 0,
-      scale: .3,
-      ease: "Linear",
-      durration: 100,
-      repeat: 2,
-
+        this.launchNum++
+      },
+      //args: [],
       callbackScope: this,
-      onComplete: function () {
-        this.shield.setPosition(-100, -100);
-      }
+      repeat: 10
+      // repeat: this.level.waves[this.onWave].waveEnemies.length - 1
     });
   }
-  destroyEnemy(enemy) {
-    enemy.body.enable = false;
-    var particles = this.add.particles("pixel");
-    var emitter = particles.createEmitter({
-      // particle speed - particles do not move
-      // speed: 1000,
-      speed: {
-        min: -1000,
-        max: 1000
-      },
-      // particle scale: from 1 to zero
-      scale: {
-        start: 1,
-        end: 0
-      },
-      // particle alpha: from opaque to transparent
-      alpha: {
-        start: 1,
-        end: 0
-      },
-      // particle frequency: one particle every 100 milliseconds
-      frequency: 25,
-      // particle lifespan: 1 second
-      lifespan: 500
-    });
-    emitter.explode(20, enemy.x, enemy.y);
 
-
-  }
-  falconHit(falcon, enemy) {
-    if (!this.isImmune) {
-      this.health -= 10;
-      this.healthText.setText(this.health);
-      this.isImmune = true;
-      falcon.setAlpha(.3);
-      this.cameras.main.shake(400, 0.01);
+  hitByTie(player, tie) {
+    if (!player.isImmune) {
+      player.hitByTie()
     }
-
-
-
-
-
+    tie.remove()
   }
-  laserHitEnemy(laser, enemy) {
-    /*  enemy.setTexture("sprExplosion");  // this refers to the same animation key we used when we added this.anims.create previously
-     enemy.play("sprExplosion");
-     enemy.body.setVelocity(0, 0);
-     enemy.on('animationcomplete', function () {
-       
- 
-     }, this); */
-    enemyGroup.killAndHide(enemy);
-    laserGroup.killAndHide(laser);
-    laser.body.enable = false;
-    this.scoreBuffer += 50
-    var particles = this.add.particles("pixel");
-    var emitter = particles.createEmitter({
-      // particle speed - particles do not move
-      // speed: 1000,
-      speed: {
-        min: -1000,
-        max: 1000
-      },
-      // particle scale: from 1 to zero
-      scale: {
-        start: 1,
-        end: 0
-      },
-      // particle alpha: from opaque to transparent
-      alpha: {
-        start: 1,
-        end: 0
-      },
-      // particle frequency: one particle every 100 milliseconds
-      frequency: 25,
-      // particle lifespan: 1 second
-      lifespan: 500
-    });
-    emitter.explode(20, enemy.x, enemy.y);
+  laserHitEnemy(bullet, enemy) {
+    console.log(enemy)
+    enemy.receiveDamage(10, this)
   }
-  laserHitAsteroid(laser, enemy) {
-    console.log(enemy.health)
-    laserGroup.killAndHide(laser);
-    laser.body.enable = false;
-    if (enemy.health > 0) {
-      enemy.health -= 35;
-    } else {
-      smallAsteroidGroup.killAndHide(enemy);
-
-      var particles = this.add.particles("pixel");
-      var emitter = particles.createEmitter({
-        // particle speed - particles do not move
-        // speed: 1000,
-        speed: {
-          min: -1000,
-          max: 1000
-        },
-        // particle scale: from 1 to zero
-        scale: {
-          start: 1,
-          end: 0
-        },
-        // particle alpha: from opaque to transparent
-        alpha: {
-          start: 1,
-          end: 0
-        },
-        // particle frequency: one particle every 100 milliseconds
-        frequency: 25,
-        // particle lifespan: 1 second
-        lifespan: 500
-      });
-      emitter.explode(20, enemy.x, enemy.y);
-    }
-  }
-  createEnemy() {
-    let bitcoinPosition = Math.floor(Math.random() * 5);
-    var enemy = enemyGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
-      .setActive(true)
-      .setVisible(true)
-      .setScale(2);
-    enemy.body.enable = true;
-    enemy.body.setVelocityY(400);
-    var side = Phaser.Math.Between(1, 2);
-    if (side == 1) {
-      enemy.body.setVelocityX(-20);
-    } else {
-      enemy.body.setVelocityX(20);
-    }
-
-    this.tieFire(enemy.x, enemy.y, 0);
-
-  }
-  createAsteroid(type) {
-    let bitcoinPosition = Math.floor(Math.random() * 5);
-
-    if (type == 1) {
-      var enemy = smallAsteroidGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
-        .setActive(true)
-        .setVisible(true)
-        .setScale(Phaser.Math.Between(2, 5));
-      enemy.health = 100;
-    }
-
-    enemy.body.enable = true;
-    //enemy.body.setVelocityY(Phaser.Math.Between(40, 70));
-    enemy.setGravityY(Phaser.Math.Between(30, 100));
-    enemy.body.setMaxVelocityY(100);
-    var side = Phaser.Math.Between(1, 2);
-    if (side == 1) {
-      enemy.body.setVelocityX(-Phaser.Math.Between(15, 25));
-    } else {
-      enemy.body.setVelocityX(Phaser.Math.Between(15, 25));
-    }
-
-
-
-  }
-  createBonus() {
-    if (this.bonusType == 5) {
-      this.bonusType = 1;
-    }
-    let bonusPosition = Math.floor(Math.random() * 5);
-    var bonus = bonusGroup.get([100, 250, 450, 700, 850][bonusPosition], 0)
-      .setActive(true)
-      .setVisible(true)
-      .setScale(2);
-    bonus.body.enable = true;
-    bonus.type = 1;
-    bonus.body.setVelocityY(100);
-    //this.bonusType++;
-    console.log(this.bonusType);
-  }
-
   startMove() {
-
+    let clickDelay = this.time.now - this.lastTime;
+    this.lastTime = this.time.now;
+    if (clickDelay < 350) {
+      this.fire()
+      console.log("We're double clicked!");
+    }
     this.moving = true;
     this.shooting = true
   }
@@ -557,11 +331,11 @@ class playGame extends Phaser.Scene {
         this.canShoot = true;
 
         if (pointer.downX > pointer.x) {
-          this.falcon.moveLeft()
+          falcon.moveLeft()
 
         } else {
 
-          this.falcon.moveRight()
+          falcon.moveRight()
         }
 
       } else {
@@ -577,64 +351,33 @@ class playGame extends Phaser.Scene {
   endMove(pointer) {
     if (this.moving) {
       this.moving = false;
-      this.falcon.stop();
+      falcon.stop();
     }
 
 
   }
-
-  fire(e) {
-    if (e.y < game.config.height - 75) {
-
-      this.oneFire(this.falcon.x - 10, this.falcon.y, 0);
-      this.oneFire(this.falcon.x + 10, this.falcon.y, 0);
-
-      this.health--;
-      this.healthText.setText(this.health);
-      this.setValue(this.healthBar, this.health);
-
-
-    }
-  }
-  oneFire(xpos, ypos, angle) {
-    var laser = laserGroup.get(xpos, ypos)
-      .setActive(true)
-      .setVisible(true)
-      .setScale(1);
-    laser.tint = 0x85dcff;
-    laser.body.enable = true;
-    laser.body.setVelocityY(-600);
-
-
-  }
-  tieFire(xpos, ypos, angle) {
-    var lasert = tieLaserGroup.get(xpos, ypos)
-      .setActive(true)
-      .setVisible(true)
-      .setScale(1);
-    lasert.tint = 0xb3372e
-    lasert.body.enable = true;
-    lasert.body.setVelocityY(800);
-
-
+  fire() {
+    falcon.fire()
   }
 
   //////////////////////////////////////////////////////
   //top
   makeUI() {
-    this.healthText = this.add.bitmapText(550 - 25, 25, "font", this.health, 100).setOrigin(1, 0).setTint(0x00ff33);
+    this.healthText = this.add.bitmapText(550 - 25, 25, "font", falcon.health, 100).setOrigin(1, 0).setTint(0x00ff33);
 
     this.scoreText = this.add.bitmapText(75, 25, "font", this.score, 100).setOrigin(0).setTint(0x00ff33);
 
     this.healthBarback = this.makeBar(550, 40, 0x282828);
     this.healthBar = this.makeBar(550, 40, 0x2ecc71);
-    this.setValue(this.healthBar, this.health, this.healthMax);
+    this.setValue(this.healthBar, falcon.health, falcon.healthMax);
 
     this.sheildBarback = this.makeBar(550, 75, 0x282828);
     this.sheildBar = this.makeBar(550, 75, 0xfafafa);
     this.sheildBarback.setAlpha(0)
     this.sheildBar.setAlpha(0)
-    this.setValue(this.sheildBar, this.sheildStrength, this.sheildStrengthMax);
+    this.setValue(this.sheildBar, falcon.sheildStrength, falcon.sheildStrengthMax);
+    this.fireButton = this.add.image(50, 1590, 'bar').setScale(2).setInteractive()
+    this.fireButton.on('pointerdown', this.fire, this)
   }
 
 

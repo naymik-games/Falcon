@@ -1,0 +1,1 @@
+var falcon, enemies, bullets, laserGroup, smallAsteroidGroup, tieLaserGroup, bonusGroup
