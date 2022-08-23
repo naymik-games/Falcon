@@ -158,6 +158,17 @@ var Enemy = new Phaser.Class({
     }
   },
   update: function (time, delta) {
+
+    var targetAngle = Phaser.Math.Angle.Between(
+      this.x, this.y,
+      falcon.x, falcon.y
+    );
+
+    this.body.velocity.x = Math.cos(targetAngle) * this.speed;
+    this.body.velocity.y = Math.sin(targetAngle) * this.speed;
+
+
+
     this.healthbar.setText(this.health)
     this.healthbar.x = this.x - this.healthbar.width / 2;
     this.healthbar.y = this.y - (this.height + 5);
@@ -186,7 +197,7 @@ let enemyTypes = [
     name: 'Tie',
     hp: 20,
     reward: 50,
-    speed: 250,
+    speed: 100,
     frame: 0,
     canShoot: true
   },
