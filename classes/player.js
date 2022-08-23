@@ -11,6 +11,7 @@ class Falcon extends Phaser.GameObjects.Sprite {
 
     this.setScale(1.5)
     this.body.setSize(50, 114, true)
+    this.body.setImmovable(true);
     this.speed = 400
     this.sheildStrengthMax = 100
     this.sheildStrength = 100
@@ -22,7 +23,7 @@ class Falcon extends Phaser.GameObjects.Sprite {
     this.deltaY = 5;
     this.lasers = new Array();
     this.lastShot = new Date().getTime();
-    this.shotFrequency = 250;
+    this.shotFrequency = 300;//higher is less frequent
   }
 
   moveLeft() {
@@ -105,6 +106,44 @@ class Falcon extends Phaser.GameObjects.Sprite {
     } else {
       this.body.collideWorldBounds = true;
     }
+    if (this.isImmune) {
+      if (time > this.nextTic) {
+        this.isImmune = false;
+        this.setAlpha(1);
+
+      }
+    }
+  }
+  hitByTie() {
+
+    if (this.hasShield) {
+      this.health -= 5;
+      this.sheildStrength -= 10
+      this.scene.setValue(this.scene.sheildBar, this.sheildStrength, this.sheildStrengthMax)
+      if (this.sheildStrength <= 0) {
+        this.dropShield()
+      }
+    } else {
+      this.health -= 20;
+      falcon.scene.time.addEvent({
+        delay: 4000,                // ms
+        callback: function () {
+          this.isImmune = false
+          falcon.setAlpha(1);
+        },
+        //args: [],
+        callbackScope: this,
+        loop: false
+      });
+    }
+    this.scene.healthText.setText(this.health);
+    this.scene.setValue(this.scene.healthBar, this.health, this.healthMax);
+    this.isImmune = true;
+    falcon.setAlpha(.3);
+    this.scene.cameras.main.shake(400, 0.01);
+
+
+
   }
 }
 

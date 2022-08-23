@@ -185,7 +185,7 @@ class playGame extends Phaser.Scene {
      this.input.on("pointerup", this.removeGems, this);
     */
     //this.check = this.add.image(725, 1000, 'check').setScale(.7);
-    // this.startWave()
+    this.startWave()
   }
   update() {
     this.updateJoystickState();
@@ -467,7 +467,8 @@ class playGame extends Phaser.Scene {
     this.sheildBarback.setAlpha(0)
     this.sheildBar.setAlpha(0)
     this.setValue(this.sheildBar, falcon.sheildStrength, falcon.sheildStrengthMax);
-    this.fireButton = this.add.image(50, 1590, 'bar').setScale(2).setInteractive()
+    // this.fireButton = this.add.image(50, 1590, 'bar').setScale(2).setInteractive()
+    this.fireButton = this.add.circle(200, 1500, 50, 0x00ff00, 1).setInteractive().setAlpha(.7);
     this.fireButton.on('pointerdown', this.fire, this)
   }
 

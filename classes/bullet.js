@@ -8,11 +8,12 @@ class ShipLaser extends Phaser.GameObjects.Sprite {
     this.speed = 20;
     this.scene = scene;
     scene.physics.world.enable(this);
-    scene.physics.add.collider(this, scene.enemies, this.handleHit, null, this);
+    scene.physics.add.collider(this, enemies, this.handleHit, null, this);
   }
 
-  handleHit(laserSprite, enemySprite) {
-    enemySprite.destroy(true);
+  handleHit(laserSprite, enemy) {
+    enemy.receiveDamage()
+    //enemySprite.destroy(true);
     laserSprite.destroy(true);
   }
 

@@ -13,6 +13,7 @@ var Enemy = new Phaser.Class({
 
       this.scene = scene
       this.scene.physics.world.enableBody(this, 0);
+      this.body.setImmovable(true);
       // let bitcoinPosition = Math.floor(Math.random() * 5);
       //  var enemy = enemyGroup.get([100, 250, 450, 700, 850][bitcoinPosition], 0)
       //console.log(this.spawn)
@@ -79,14 +80,16 @@ var Enemy = new Phaser.Class({
   remove: function () {
     this.healthbar.setText('')
     this.body.setVelocityY(0);
-    this.setPosition(450, -50)
+    this.healthbar.destroy()
+    this.destroy()
+    /* this.setPosition(450, -50)
     this.setActive(false);
-    this.setVisible(false);
+    this.setVisible(false); */
   },
-  receiveDamage: function (damage, scene) {
+  receiveDamage: function () {
 
-    this.health -= damage;
-    scene.tweens.add({
+    this.health -= 20;
+    this.scene.tweens.add({
       targets: this,
       alpha: 0,
       yoyo: true,
@@ -98,7 +101,7 @@ var Enemy = new Phaser.Class({
     // if hp drops below 0 we deactivate this enemy
     if (this.health <= 0) {
 
-      var emitter = scene.add.particles('particle_color').createEmitter({
+      var emitter = this.scene.add.particles('particle_color').createEmitter({
 
         speed: { min: -300, max: 300 },
         angle: { min: 0, max: 360 },
@@ -108,13 +111,13 @@ var Enemy = new Phaser.Class({
         lifespan: 400,
         frame: [0, 1, 2, 3]
       });
-      emitter.explode(25, this.x, this.y);
+      emitter.explode(20, this.x, this.y);
 
 
 
 
 
-      scene.scoreBuffer += this.reward
+      this.scene.scoreBuffer += this.reward
       // scene.UI.moneyText.setText(money.amount)
       this.remove()
     }
