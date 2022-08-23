@@ -54,17 +54,17 @@ class playGame extends Phaser.Scene {
 
 
 
-    this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'sprBg0').setAlpha(.6)
-    this.tileSprite2 = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back2').setAlpha(.8)
+    //this.tileSprite = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'sprBg0').setAlpha(.4)
+    //  this.tileSprite2 = this.add.tileSprite(0, 0, game.config.width * 2, game.config.height * 2, 'back2').setAlpha(.6)
 
 
     this.joyStick = this.plugins.get('rexvirtualjoystickplugin').add(this, {
-      x: 200,
-      y: 1200,
+      x: 700,
+      y: 1500,
       radius: 100,
       //base: baseGameObject,
       //thumb: thumbGameObject,
-      dir: '8dir',
+      dir: '4dir',
       // forceMin: 16,
       // fixed: true,
       // enable: true
@@ -102,14 +102,8 @@ class playGame extends Phaser.Scene {
     this.shield.body.setImmovable(true);
 
     //falcon = this.physics.add.image(game.config.width / 2, game.config.height - 100, "block").setScale(1.5);
-    falcon = new Player(
-      this,
-      game.config.width / 2,
-      game.config.height - 200,
-      'block',
-      0
-
-    );
+    falcon = new Falcon(this, game.config.width / 2, game.config.height - 200);
+    this.add.existing(falcon);
 
 
     // falcon.displaWidth=50;
@@ -191,7 +185,7 @@ class playGame extends Phaser.Scene {
      this.input.on("pointerup", this.removeGems, this);
     */
     //this.check = this.add.image(725, 1000, 'check').setScale(.7);
-    this.startWave()
+    // this.startWave()
   }
   update() {
     this.updateJoystickState();
@@ -220,8 +214,8 @@ class playGame extends Phaser.Scene {
       this.tieSpeed = 600
       this.bgSpeed = 1
     }
-    this.tileSprite.tilePositionY -= this.bgSpeedArray[this.bgSpeed][0];
-    this.tileSprite2.tilePositionY -= this.bgSpeedArray[this.bgSpeed][1];
+    //this.tileSprite.tilePositionY -= this.bgSpeedArray[this.bgSpeed][0];
+    //  this.tileSprite2.tilePositionY -= this.bgSpeedArray[this.bgSpeed][1];
 
     if (this.hyperspace) {
       if (falcon.x < 0) {
@@ -363,7 +357,7 @@ class playGame extends Phaser.Scene {
     let clickDelay = this.time.now - this.lastTime;
     this.lastTime = this.time.now;
     if (clickDelay < 350) {
-      this.fire()
+      falcon.fire()
       console.log("We're double clicked!");
     }
     this.moving = true;

@@ -1,4 +1,112 @@
 
+class Falcon extends Phaser.GameObjects.Sprite {
+
+  constructor(scene, x, y) {
+    super(scene, x, y);
+    this.setTexture('block');
+    this.setPosition(x, y);
+
+    this.scene = scene;
+    this.scene.physics.world.enableBody(this, 0);
+
+    this.setScale(1.5)
+    this.body.setSize(50, 114, true)
+    this.speed = 400
+    this.sheildStrengthMax = 100
+    this.sheildStrength = 100
+    this.hasHyperspace = true
+    this.isImmune = false;
+    this.healthMax = 100
+    this.health = 100;
+    this.deltaX = 5;
+    this.deltaY = 5;
+    this.lasers = new Array();
+    this.lastShot = new Date().getTime();
+    this.shotFrequency = 250;
+  }
+
+  moveLeft() {
+    if (this.x > 0) {
+      // this.x -= this.deltaX;
+      this.body.velocity.x = -this.speed;
+    }
+  }
+
+  moveRight() {
+    if (this.x < game.config.width) {
+      //this.x += this.deltaX;
+      this.body.velocity.x = this.speed;
+    }
+  }
+
+  moveUp() {
+    if (this.y > 0) {
+      // this.y -= this.deltaY;
+      this.body.velocity.y = -this.speed;
+    }
+  }
+  stop() {
+    this.body.velocity.x = 0
+    this.body.velocity.y = 0
+  }
+  moveDown() {
+
+    if (this.y < game.config.height) {
+      //this.y += this.deltaY;
+      this.body.velocity.y = + this.speed;
+    }
+  }
+
+  fire() {
+    var currentTime = new Date().getTime();
+    if (currentTime - this.lastShot > this.shotFrequency) {
+      var shipLaser = new ShipLaser(this.scene, this.x, this.y);
+      this.scene.add.existing(shipLaser);
+      this.lasers.push(shipLaser);
+      this.lastShot = currentTime;
+    }
+  }
+
+  preUpdate(time, delta) {
+    super.preUpdate(time, delta);
+
+    var i = 0;
+    var j = 0;
+    var lasersToRemove = new Array();
+
+    for (i = 0; i < this.lasers.length; i++) {
+      this.lasers[i].update();
+
+      if (this.lasers[i].y <= 0) {
+        lasersToRemove.push(this.lasers[i]);
+      }
+    }
+
+    for (j = 0; j < lasersToRemove.length; j++) {
+      var laserIndex = this.lasers.indexOf(lasersToRemove[j]);
+      this.lasers.splice(laserIndex, 1);
+      lasersToRemove[j].destroy();
+    }
+
+    if (this.hasHyperspace) {
+      this.body.collideWorldBounds = false;
+      if (this.x < 0) {
+        this.setPosition(game.config.width, this.y);
+      }
+      if (this.x > game.config.width) {
+        this.setPosition(0, this.y);
+      }
+      if (this.y < 0) {
+        this.setPosition(this.x, game.config.height);
+      }
+      if (this.y > game.config.height) {
+        this.setPosition(this.x, 0);
+      }
+    } else {
+      this.body.collideWorldBounds = true;
+    }
+  }
+}
 
 
 class Player extends Phaser.GameObjects.Sprite {
